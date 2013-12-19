@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+#
+# Summary: Set or show the global Apache version
+#
+# Usage: apaenv global <version>
+#
+# Sets the global Apache version. You can override the global version at
+# any time by setting a directory-specific version with `apaenv local'
+# or by setting the `APAENV_VERSION' environment variable.
+#
+# <version> should be a string matching a Apache version known to apaenv.
+# The special version string `system' will use your default system Apache.
+# Run `apaenv versions' for a list of available Apache versions.
+
+set -e
+[ -n "$APAENV_DEBUG" ] && set -x
+
+# Provide apaenv completions
+if [ "$1" = "--complete" ]; then
+  echo system
+  exec apaenv-versions --bare
+fi
+
+APAENV_VERSION="$1"
+APAENV_VERSION_FILE="${APAENV_ROOT}/version"
+
+if [ -n "$APAENV_VERSION" ]; then
+  apaenv-version-file-write "$APAENV_VERSION_FILE" "$APAENV_VERSION"
+else
+  apaenv-version-file-read "$APAENV_VERSION_FILE" ||
+  apaenv-version-file-read "${APAENV_ROOT}/global" ||
+  apaenv-version-file-read "${APAENV_ROOT}/default" ||
+  echo system
+fi

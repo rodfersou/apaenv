@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -e
+[ -n "$APAENV_DEBUG" ] && set -x
+
+# Provide apaenv completions
+if [ "$1" = "--complete" ]; then
+  exec apaenv-rehash --complete
+fi
+
+# When apaenv shell integration is enabled, delegate to apaenv-rehash,
+# then tell the shell to empty its command lookup cache.
+apaenv-rehash
+echo "hash -r 2>/dev/null || true"

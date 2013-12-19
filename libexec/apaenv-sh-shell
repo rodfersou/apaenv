@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+#
+# Summary: Set or show the shell-specific Apache version
+#
+# Usage: apaenv shell <version>
+#        apaenv shell --unset
+#
+# Sets a shell-specific Apache version by setting the `APAENV_VERSION'
+# environment variable in your shell. This version overrides local
+# application-specific versions and the global version.
+#
+# <version> should be a string matching a Apache version known to apaenv.
+# The special version string `system' will use your default system Apache.
+# Run `apaenv versions' for a list of available Apache versions.
+
+set -e
+[ -n "$APAENV_DEBUG" ] && set -x
+
+# Provide apaenv completions
+if [ "$1" = "--complete" ]; then
+  echo --unset
+  echo system
+  exec apaenv-versions --bare
+fi
+
+version="$1"
+
+if [ -z "$version" ]; then
+  if [ -z "$APAENV_VERSION" ]; then
+    echo "apaenv: no shell-specific version configured" >&2
+    exit 1
+  else
+    echo "echo \"\$APAENV_VERSION\""
+    exit
+  fi
+fi
+
+if [ "$version" = "--unset" ]; then
+  echo "unset APAENV_VERSION"
+  exit
+fi
+
+# Make sure the specified version is installed.
+if apaenv-prefix "$version" >/dev/null; then
+  echo "export APAENV_VERSION=\"${version}\""
+else
+  echo "return 1"
+  exit 1
+fi

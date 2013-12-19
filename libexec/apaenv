@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+set -e
+export -n CDPATH
+
+if [ "$1" = "--debug" ]; then
+  export APAENV_DEBUG=1
+  shift
+fi
+
+if [ -n "$APAENV_DEBUG" ]; then
+  export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] '
+  set -x
+fi
+
+READLINK=$(type -p greadlink readlink | head -1)
+if [ -z "$READLINK" ]; then
+  echo "apaenv: cannot find readlink - are you missing GNU coreutils?" >&2
+  exit 1
+fi
+
+resolve_link() {
+  $READLINK "$1"
+}
+
+abs_dirname() {
+  local cwd="$(pwd)"
+  local path="$1"
+
+  while [ -n "$path" ]; do
+    cd "${path%/*}"
+    local name="${path##*/}"
+    path="$(resolve_link "$name" || true)"
+  done
+
+  pwd
+  cd "$cwd"
+}
+
+if [ -z "${APAENV_ROOT}" ]; then
+  APAENV_ROOT="${HOME}/.apaenv"
+else
+  APAENV_ROOT="${APAENV_ROOT%/}"
+fi
+export APAENV_ROOT
+
+if [ -z "${APAENV_DIR}" ]; then
+  APAENV_DIR="$(pwd)"
+else
+  cd "$APAENV_DIR" 2>/dev/null || {
+    echo "apaenv: cannot change working directory to \`$APAENV_DIR'"
+    exit 1
+  } >&2
+  APAENV_DIR="$(pwd)"
+  cd "$OLDPWD"
+fi
+export APAENV_DIR
+
+
+shopt -s nullglob
+
+bin_path="$(abs_dirname "$0")"
+for plugin_bin in "${APAENV_ROOT}/plugins/"*/bin; do
+  bin_path="${bin_path}:${plugin_bin}"
+done
+export PATH="${bin_path}:${PATH}"
+
+hook_path="${APAENV_HOOK_PATH}:${APAENV_ROOT}/apaenv.d:/usr/local/etc/apaenv.d:/etc/apaenv.d:/usr/lib/apaenv/hooks"
+for plugin_hook in "${APAENV_ROOT}/plugins/"*/etc/apaenv.d; do
+  hook_path="${hook_path}:${plugin_hook}"
+done
+export APAENV_HOOK_PATH="$hook_path"
+
+shopt -u nullglob
+
+
+command="$1"
+case "$command" in
+"" | "-h" | "--help" )
+  echo -e "$(apaenv---version)\n$(apaenv-help)" >&2
+  ;;
+"-v" )
+  exec apaenv---version
+  ;;
+* )
+  command_path="$(command -v "apaenv-$command" || true)"
+  if [ -z "$command_path" ]; then
+    echo "apaenv: no such command \`$command'" >&2
+    exit 1
+  fi
+
+  shift 1
+  exec "$command_path" "$@"
+  ;;
+esac

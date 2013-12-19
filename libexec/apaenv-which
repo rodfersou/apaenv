@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+#
+# Summary: Display the full path to an executable
+#
+# Usage: apaenv which <command>
+#
+# Displays the full path to the executable that apaenv will invoke when
+# you run the given command.
+
+set -e
+[ -n "$APAENV_DEBUG" ] && set -x
+
+# Provide apaenv completions
+if [ "$1" = "--complete" ]; then
+  exec apaenv shims --short
+fi
+
+expand_path() {
+  if [ ! -d "$1" ]; then
+    return 1
+  fi
+
+  local cwd="$(pwd)"
+  cd "$1"
+  pwd
+  cd "$cwd"
+}
+
+remove_from_path() {
+  local path_to_remove="$(expand_path "$1")"
+  local result=""
+
+  if [ -z "$path_to_remove" ]; then
+    echo "${PATH}"
+    return
+  fi
+
+  local paths
+  IFS=: paths=($PATH)
+
+  for path in "${paths[@]}"; do
+    path="$(expand_path "$path" || true)"
+    if [ -n "$path" ] && [ "$path" != "$path_to_remove" ]; then
+      result="${result}${path}:"
+    fi
+  done
+
+  echo "${result%:}"
+}
+
+APAENV_VERSION="$(apaenv-version-name)"
+APAENV_COMMAND="$1"
+
+if [ -z "$APAENV_COMMAND" ]; then
+  apaenv-help --usage which >&2
+  exit 1
+fi
+
+if [ "$APAENV_VERSION" = "system" ]; then
+  PATH="$(remove_from_path "${APAENV_ROOT}/shims")"
+  APAENV_COMMAND_PATH="$(command -v "$APAENV_COMMAND" || true)"
+else
+  APAENV_COMMAND_PATH="${APAENV_ROOT}/versions/${APAENV_VERSION}/bin/${APAENV_COMMAND}"
+fi
+
+OLDIFS="$IFS"
+IFS=$'\n' scripts=(`apaenv-hooks which`)
+IFS="$OLDIFS"
+for script in "${scripts[@]}"; do
+  source "$script"
+done
+
+if [ -x "$APAENV_COMMAND_PATH" ]; then
+  echo "$APAENV_COMMAND_PATH"
+else
+  echo "apaenv: $APAENV_COMMAND: command not found" >&2
+
+  versions="$(apaenv-whence "$APAENV_COMMAND" || true)"
+  if [ -n "$versions" ]; then
+    { echo
+      echo "The \`$1' command exists in these Apache versions:"
+      echo "$versions" | sed 's/^/  /g'
+      echo
+    } >&2
+  fi
+
+  exit 127
+fi

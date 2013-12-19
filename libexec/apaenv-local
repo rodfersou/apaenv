@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+#
+# Summary: Set or show the local application-specific Apache version
+#
+# Usage: apaenv local <version>
+#        apaenv local --unset
+#
+# Sets the local application-specific Apache version by writing the
+# version name to a file named `.apache-version'.
+#
+# When you run a Apache command, apaenv will look for a `.apache-version'
+# file in the current directory and each parent directory. If no such
+# file is found in the tree, apaenv will use the global Apache version
+# specified with `apaenv global'. A version specified with the
+# `APAENV_VERSION' environment variable takes precedence over local
+# and global versions.
+#
+# For backwards compatibility, apaenv will also read version
+# specifications from `.apaenv-version' files, but a `.apache-version'
+# file in the same directory takes precedence.
+#
+# <version> should be a string matching a Apache version known to apaenv.
+# The special version string `system' will use your default system Apache.
+# Run `apaenv versions' for a list of available Apache versions.
+
+set -e
+[ -n "$APAENV_DEBUG" ] && set -x
+
+# Provide apaenv completions
+if [ "$1" = "--complete" ]; then
+  echo --unset
+  echo system
+  exec apaenv-versions --bare
+fi
+
+APAENV_VERSION="$1"
+
+if [ "$APAENV_VERSION" = "--unset" ]; then
+  rm -f .apache-version .apaenv-version
+elif [ -n "$APAENV_VERSION" ]; then
+  previous_file="$(APAENV_VERSION= apaenv-version-origin || true)"
+  apaenv-version-file-write .apache-version "$APAENV_VERSION"
+  if [ "$previous_file" -ef .apaenv-version ]; then
+    rm -f .apaenv-version
+    { echo "apaenv: removed existing \`.apaenv-version' file and migrated"
+      echo "       local version specification to \`.apache-version' file"
+    } >&2
+  fi
+else
+  apaenv-version-file-read .apache-version ||
+  apaenv-version-file-read .apaenv-version ||
+  { echo "apaenv: no local version configured for this directory"
+    exit 1
+  } >&2
+fi

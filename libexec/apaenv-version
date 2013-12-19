@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Summary: Show the current Apache version and its origin
+#
+# Shows the currently selected Apache version and how it was
+# selected. To obtain only the version string, use `apaenv
+# version-name'.
+
+set -e
+[ -n "$APAENV_DEBUG" ] && set -x
+
+echo "$(apaenv-version-name) (set by $(apaenv-version-origin))"

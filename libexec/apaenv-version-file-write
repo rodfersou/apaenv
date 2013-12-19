@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Usage: apaenv version-file-write <file> <version>
+
+set -e
+[ -n "$APAENV_DEBUG" ] && set -x
+
+APAENV_VERSION_FILE="$1"
+APAENV_VERSION="$2"
+
+if [ -z "$APAENV_VERSION" ] || [ -z "$APAENV_VERSION_FILE" ]; then
+  apaenv-help --usage version-file-write >&2
+  exit 1
+fi
+
+# Make sure the specified version is installed.
+apaenv-prefix "$APAENV_VERSION" >/dev/null
+
+# Write the version out to disk.
+echo "$APAENV_VERSION" > "$APAENV_VERSION_FILE"
