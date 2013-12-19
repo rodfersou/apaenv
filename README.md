@@ -1,4 +1,4 @@
-# apaenv - apache version manager
+# apaenv - apache version manager (work in progress)
 apaenv is similar to [rbenv](https://github.com/sstephenson/rbenv) and [ndenv](https://github.com/riywo/ndenv), manages multi versions apache.
 
     $ apache -v
@@ -9,7 +9,7 @@ apaenv is similar to [rbenv](https://github.com/sstephenson/rbenv) and [ndenv](h
     $ apache -v
     v0.11.2
 
-Almost all of code come from ndenv. Thanks a lot!
+Almost all of code come from [ndenv](https://github.com/riywo/ndenv). Thanks a lot!
 
 ## INSTALL
 
