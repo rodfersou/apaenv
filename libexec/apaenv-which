@@ -60,7 +60,7 @@ if [ "$APAENV_VERSION" = "system" ]; then
   PATH="$(remove_from_path "${APAENV_ROOT}/shims")"
   APAENV_COMMAND_PATH="$(command -v "$APAENV_COMMAND" || true)"
 else
-  APAENV_COMMAND_PATH="${APAENV_ROOT}/versions/${APAENV_VERSION}/bin/${APAENV_COMMAND}"
+  APAENV_COMMAND_PATH="${APAENV_ROOT}/versions/${APAENV_VERSION}/bindist/bin/${APAENV_COMMAND}"
 fi
 
 OLDIFS="$IFS"
