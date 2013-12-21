@@ -21,7 +21,7 @@ fi
 whence() {
   local command="$1"
   apaenv-versions --bare | while read version; do
-    path="$(apaenv-prefix "$version")/bindist/bin/${command}"
+    path="$(apaenv-prefix "$version")/bin/${command}"
     if [ -x "$path" ]; then
       [ "$print_paths" ] && echo "$path" || echo "$version"
     fi
