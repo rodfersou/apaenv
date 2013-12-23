@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Summary: Start apache in the current folder
+# Usage: apaenv start [port]
+#
+# Start apache in the current folder
+
+set -e
+[ -n "$APAENV_DEBUG" ] && set -x
+
+if [ "$1" = "" ]; then
+    PORT="8080"
+else
+    PORT="$1"
+fi
+
+if [ ! -f ".httpd.conf" ]
+then
+    ORIGINAL_HTTPDCONF="$(echo `apaenv which apachectl` | sed 's/\(.*\)\/bin.*/\1\/conf\/httpd.conf/')"
+    cp $ORIGINAL_HTTPDCONF .httpd.conf
+
+    # change server root
+    ESCAPPED_PWD=$(echo `pwd` | sed 's/\//\\\//g')
+    sed -i "s/^\(DocumentRoot\).*/\1\ \"$ESCAPPED_PWD\"/" .httpd.conf
+    sed -i "s/^\(.Directory\).*htdocs.*\(.\)$/\1\ \"$ESCAPPED_PWD\"\2/" .httpd.conf
+    
+    # if there is php module
+    if [ "`grep php5_module .httpd.conf`" != "" ]
+    then
+        # enable rewrite module
+        sed -i "s/^#\(.*rewrite_module.*\)/\1/" .httpd.conf
+
+        # add php file type
+        sed -i "/php5_module.*/a \
+AddType application/x-httpd-php .php .phtml" .httpd.conf
+        
+        # Add index.php as directory index
+        sed -i "s/^\(\ *DirectoryIndex.*\)/\1 index.php/" .httpd.conf
+    fi
+fi
+
+# change port
+sed -i "s/^\(Listen\).*/\1 0.0.0.0:$PORT/" .httpd.conf
+
+# start apache
+apachectl -k start -f `pwd`/.httpd.conf
