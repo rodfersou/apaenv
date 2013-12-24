@@ -18,10 +18,17 @@ then
     ORIGINAL_HTTPDCONF="$(echo `apaenv which apachectl` | sed 's/\(.*\)\/bin.*/\1\/conf\/httpd.conf/')"
     cp $ORIGINAL_HTTPDCONF .httpd.conf
 
-    # change server root
+    # change port (first time)
+    sed -i "s/^\(Listen\).*/\1 0.0.0.0:$PORT/" .httpd.conf
+
+    # change document root
     ESCAPPED_PWD=$(echo `pwd` | sed 's/\//\\\//g')
     sed -i "s/^\(DocumentRoot\).*/\1\ \"$ESCAPPED_PWD\"/" .httpd.conf
     sed -i "s/^\(.Directory\).*htdocs.*\(.\)$/\1\ \"$ESCAPPED_PWD\"\2/" .httpd.conf
+
+    # add lock file config
+    sed -i "/^ServerRoot.*/a \
+PidFile \"$ESCAPPED_PWD\/.httpd.pid\"" .httpd.conf
     
     # if there is php module
     if [ "`grep php5_module .httpd.conf`" != "" ]
@@ -38,8 +45,10 @@ AddType application/x-httpd-php .php .phtml" .httpd.conf
     fi
 fi
 
-# change port
-sed -i "s/^\(Listen\).*/\1 0.0.0.0:$PORT/" .httpd.conf
+if [ "$1" != "" ]; then
+    # change port (always when informed)
+    sed -i "s/^\(Listen\).*/\1 0.0.0.0:$PORT/" .httpd.conf
+fi
 
 # start apache
 apachectl -k start -f `pwd`/.httpd.conf
