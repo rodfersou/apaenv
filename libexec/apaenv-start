@@ -21,6 +21,9 @@ then
     # change port (first time)
     sed -i "s/^\(Listen\).*/\1 0.0.0.0:$PORT/" .httpd.conf
 
+    # change allow override (make modrewrite works)
+    sed -i "s/^\(\ *AllowOverride\).*/\1 All/" .httpd.conf
+
     # change document root
     ESCAPPED_PWD=$(echo `pwd` | sed 's/\//\\\//g')
     sed -i "s/^\(DocumentRoot\).*/\1\ \"$ESCAPPED_PWD\"/" .httpd.conf
@@ -29,7 +32,7 @@ then
     # add lock file config
     sed -i "/^ServerRoot.*/a \
 PidFile \"$ESCAPPED_PWD\/.httpd.pid\"" .httpd.conf
-    
+
     # if there is php module
     if [ "`grep php5_module .httpd.conf`" != "" ]
     then
@@ -39,7 +42,7 @@ PidFile \"$ESCAPPED_PWD\/.httpd.pid\"" .httpd.conf
         # add php file type
         sed -i "/php5_module.*/a \
 AddType application/x-httpd-php .php .phtml" .httpd.conf
-        
+
         # Add index.php as directory index
         sed -i "s/^\(\ *DirectoryIndex.*\)/\1 index.php/" .httpd.conf
     fi
